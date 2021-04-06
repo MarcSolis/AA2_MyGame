@@ -9,7 +9,13 @@ import SpriteKit
 import GameplayKit
 import CoreMotion
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
+    
+    private var enemy1 : SKSpriteNode!
+    
+    enum PlayerState {
+        case WALK, ATTACK, IDLE
+    }
     
     private var label : SKLabelNode?
     private var knight : SKSpriteNode!
@@ -55,6 +61,7 @@ class GameScene: SKScene {
     private var idleAction : SKAction!
     private var movementActionStart : SKAction!
     private var smokeParticles : SKEmitterNode!
+    private var playerState : PlayerState = PlayerState.IDLE
     
     let attackActionKey = "Attack"
     let walkActionKey = "Walk"
@@ -68,6 +75,8 @@ class GameScene: SKScene {
     
     override func didMove(to view: SKView) {
         
+        self.physicsWorld.contactDelegate = self
+        playerState = PlayerState.IDLE
         // Get label node from scene and store it for use later
         self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
         if let label = self.label {
@@ -77,8 +86,30 @@ class GameScene: SKScene {
         
         // Create shape node to use during mouse interaction
         let w = (self.size.width + self.size.height) * 0.05
+        self.enemy1 = SKSpriteNode(imageNamed: "Idle (1)")
+        self.enemy1.size = CGSize(width: w, height: w/2)
+        self.enemy1.position = CGPoint(x: 100, y: -100)
+        self.enemy1.zPosition = 1000
+        self.enemy1.physicsBody = SKPhysicsBody(texture: enemy1.texture!, size: enemy1.size)
+        self.enemy1.physicsBody?.affectedByGravity = false
+
+        self.enemy1.name = "enemy1"
+        self.enemy1.physicsBody!.collisionBitMask = 0x00000001
+        self.addChild(self.enemy1)
+        
+        
         self.knight = SKSpriteNode(imageNamed: "Idle (1)")
         self.knight.size = CGSize(width: w, height: w)
+        
+        //Physics
+        self.knight.physicsBody = SKPhysicsBody(texture: knight.texture!, size: knight.size)
+        self.knight.physicsBody?.affectedByGravity = false
+        self.knight.name = "knight"
+        self.knight.physicsBody!.collisionBitMask = 0x00000000
+        self.knight.physicsBody!.contactTestBitMask = 0x00000001
+        
+
+        
         
         self.walkAction = SKAction.repeatForever(SKAction.animate(with: self.walkAnimation, timePerFrame: 0.07))
         self.idleAction = SKAction.repeatForever(SKAction.animate(with: self.idleAnimation, timePerFrame: 0.15))
@@ -99,6 +130,14 @@ class GameScene: SKScene {
         motionManager.startAccelerometerUpdates()
     }
     
+    func didBegin(_ contact: SKPhysicsContact) {
+        if(contact.bodyA.node?.name == "knight"){
+            contact.bodyB.node!.removeFromParent()
+        }
+        else if(contact.bodyB.node?.name == "knight"){
+            contact.bodyA.node!.removeFromParent()
+        }
+    }
     
     func touchDown(atPoint pos : CGPoint) {
         
@@ -156,20 +195,31 @@ class GameScene: SKScene {
         if let accelerometerData = self.motionManager.accelerometerData {
             let changeX = CGFloat(accelerometerData.acceleration.y) * 10
             if(changeX > offset){
-                self.knight.removeAction(forKey: self.idleActionKey)
-                self.knight.run(self.walkAction, withKey: self.walkActionKey)
+                if(playerState == PlayerState.IDLE){
+                    playerState = PlayerState.WALK
+                    self.knight.removeAction(forKey: self.idleActionKey)
+                    self.knight.run(self.walkAction, withKey: self.walkActionKey)
+                    
+                }
                 self.knight.xScale = 1
                 self.knight.position.x += changeX
             }
             else if(changeX < -offset){
-                self.knight.removeAction(forKey: self.idleActionKey)
-                self.knight.run(self.walkAction, withKey: self.walkActionKey)
+                if(playerState == PlayerState.IDLE){
+                    playerState = PlayerState.WALK
+                    self.knight.removeAction(forKey: self.idleActionKey)
+                    self.knight.run(self.walkAction, withKey: self.walkActionKey)
+                    
+                }
                 self.knight.xScale = -1
                 self.knight.position.x += changeX
             }
             else{
-                self.knight.removeAction(forKey: self.walkActionKey)
-                self.knight.run(self.idleAction, withKey: self.idleActionKey)
+                if(playerState == PlayerState.WALK){
+                    playerState = PlayerState.IDLE
+                    self.knight.removeAction(forKey: self.walkActionKey)
+                    self.knight.run(self.idleAction, withKey: self.idleActionKey)
+                }
             }
 
         }
