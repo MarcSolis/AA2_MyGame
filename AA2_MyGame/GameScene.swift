@@ -85,13 +85,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.enemy1 = SKSpriteNode(imageNamed: "Idle (1)")
-        self.enemy1.size = CGSize(width: w, height: w/2)
-        self.enemy1.position = CGPoint(x: 100, y: -100)
+        let w = (self.size.width + self.size.height) * 0.08
+        self.enemy1 = SKSpriteNode(imageNamed: "ovni")
+        self.enemy1.size = CGSize(width: w/2, height: w/2)
+        self.enemy1.position = CGPoint(x: 200, y: -Int.random(in: 80 ... 120))
         self.enemy1.zPosition = 1000
         self.enemy1.physicsBody = SKPhysicsBody(texture: enemy1.texture!, size: enemy1.size)
         self.enemy1.physicsBody?.affectedByGravity = false
+        self.enemy1.physicsBody?.velocity = CGVector(dx: -100, dy: 0)
 
         self.enemy1.name = "enemy1"
         self.enemy1.physicsBody!.collisionBitMask = 0x00000001
@@ -122,7 +123,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.smokeParticles = SKEmitterNode(fileNamed: "Smoke")
         self.smokeParticles.position.x = -10
-        self.smokeParticles.position.y = -40
+        self.smokeParticles.position.y = -60
         self.smokeParticles.zPosition = -1
         
         self.knight.addChild( self.smokeParticles)
